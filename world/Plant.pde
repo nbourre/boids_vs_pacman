@@ -2,7 +2,6 @@ public enum PlantState {SEED, SPROUT, MATURE, FLOWERING}
 class Plant extends WorldObject{
   
   //config attributes
-  final static int fertilizerRayon = 50;//represent how far the seed can get the fertilizer
   final static int matureStateEnergy = 100;//represent how much energy required to enter mature state
   final static int floweringStateEnergy = 200;//represent how much energy required to enter flowering state
   final static int floweringTime = 5000;//represent how long it take to generate new seeds and then go dyingstate
@@ -21,7 +20,8 @@ class Plant extends WorldObject{
   private PlantState state;
   Delay floweringTimer;
   Delay eatTimer;
-  
+  color fillColor;
+  color strokeColor;
   //constructors 
   Plant(float x, float y ,World world,int energy){
     //WorldObject attributes
@@ -209,7 +209,7 @@ class Plant extends WorldObject{
   
   Boolean findFertilizer(){
     for(Fertilizer f:fertilizers){
-      if(PVector.dist(f.location,this.location) < fertilizerRayon){
+      if(PVector.dist(f.location,this.location) < f.fertilizingRayon){
         fertilizer = f;
         return true;
       }

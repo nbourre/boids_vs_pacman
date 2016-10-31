@@ -14,8 +14,8 @@ Boolean newCarnivorePress = false;
 
 void setup () {
   
-  fullScreen(1);
- // size (680, 384);
+ // fullScreen(1);
+  size (680, 384);
   world = new World();
  
 }
@@ -87,7 +87,7 @@ class World {
   final Boolean debug = false;
   final int startingHerbivore = 50;
   final int startingFertilizer = 10;
-  final int startingPlant = 100;
+  final int startingPlant = 400;
   final int startingCarnivore = 1;
   
 //world components

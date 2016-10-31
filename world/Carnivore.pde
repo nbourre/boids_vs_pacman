@@ -135,10 +135,8 @@ class Carnivore extends WorldObject{
         target.energy = 0;
         world.removeHerbivore(target);
         hasTarget = false;
-        println("targeteat");
       }else if(PVector.dist(location,target.location) > chaseRadius){
         hasTarget = false;
-        println("targetlost a une distance de " +  + PVector.dist(location,target.location));
       }
     }
     
@@ -183,7 +181,6 @@ class Carnivore extends WorldObject{
     if(closestHerbivore != null){
       target = closestHerbivore ; 
       hasTarget = true;
-      println("targetAcquired a une distance de : " + PVector.dist(location,target.location));
     }
   }
   void setColor(){
