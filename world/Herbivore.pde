@@ -444,7 +444,7 @@ class Herbivore extends WorldObject {
     
     if(energy > 50){
       world.addFertilizer(new Fertilizer(location.x,location.y,world,30));
-      world.addPlant(new Plant(location.x,location.y,world,20));
+      world.addPlant(new Plant(location.x,location.y,world));
       this.energy -= 50;
     }else{
       world.addFertilizer(new Fertilizer(location.x,location.y,world,this.energy));

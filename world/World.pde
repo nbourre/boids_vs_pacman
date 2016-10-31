@@ -51,7 +51,7 @@ void keyPressed() {
   }
   if (key == 'p' && !newPlantPress){
     newPlantPress = true;
-    world.addPlant(new Plant(random (width), random (height),world,20));
+    world.addPlant(new Plant(random (width), random (height),world));
   }
   if (key == 'h' && !newHerbivorePress){
     newHerbivorePress = true;
@@ -86,8 +86,8 @@ class World {
 //config attributes
   final Boolean debug = false;
   final int startingHerbivore = 50;
-  final int startingFertilizer = 10;
-  final int startingPlant = 400;
+  final int startingFertilizer = 20;
+  final int startingPlant = 200;
   final int startingCarnivore = 1;
   
 //world components
@@ -128,7 +128,7 @@ class World {
       fertilizers.add(new Fertilizer(random (width), random (height),this));
       
     for (int i = 0; i < startingPlant; i++) 
-      plants.add(new Plant(random (width), random (height),this,20));
+      plants.add(new Plant(random (width), random (height),this));
       
     for (int i = 0; i < startingCarnivore; i++) 
       carnivores.add(new Carnivore(random (width), random (height), this));

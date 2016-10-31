@@ -5,10 +5,10 @@
 class Fertilizer extends WorldObject{
   
 //config attributes
-  static final float energySizeMultiplicator = 0.01;//used to calcul sizeModifier
-  static final int baseWidth = 30;
-  static final int baseHeight = 10;
-  static final int defaultEnergy = 100;
+  static final float energySizeMultiplicator = 0.005;//used to calcul sizeModifier
+  static final int defaultWidth = 30;
+  static final int defaultHeight = 10;
+  static final int defaultEnergy = 500;
   
 //attributes
   float sizeModifier;
@@ -28,7 +28,7 @@ class Fertilizer extends WorldObject{
     strokeColor = 0;
     energy = defaultEnergy;
     updateSize();
-    fertilizingRayon = size.x /2;
+    fertilizingRayon = size.x ;
   }
   
   Fertilizer(float x, float y, World world,int energy){
@@ -41,7 +41,7 @@ class Fertilizer extends WorldObject{
     strokeColor = 0;
     this.energy = energy;
     updateSize();
-    fertilizingRayon = size.x /2;
+    fertilizingRayon = size.x ;
   }
 
 //inherited methods
@@ -81,6 +81,6 @@ class Fertilizer extends WorldObject{
   
   void updateSize(){
     sizeModifier = (float) energySizeMultiplicator * energy;
-    size.set(baseWidth*sizeModifier,baseHeight*sizeModifier);
+    size.set(defaultWidth*sizeModifier,defaultHeight*sizeModifier);
   }
 }
