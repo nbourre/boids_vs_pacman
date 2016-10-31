@@ -1,44 +1,96 @@
 World world;
 
+//time management variables
 long previousTime = 0;
 long currentTime = 0;
 long deltaTime;
 
+//key management variable
+Boolean newWorldPress = false;
+Boolean newFertilizerPress = false;
+Boolean newPlantPress = false;
+Boolean newHerbivorePress = false;
+Boolean newCarnivorePress = false;
+
 void setup () {
   
-
- // fullScreen(1);
-  size (680, 384);
+  fullScreen(1);
+ // size (680, 384);
   world = new World();
-  
-  
+ 
 }
 
 void draw() {
   currentTime = millis();
   deltaTime = currentTime - previousTime;
   
+  background (255);
+  
   world.update(deltaTime);
   world.display();
-
+  world.showData();
+  
+  showThanks();
+  
   previousTime = currentTime; 
 }
 
-void keyPressed() {
-  if (key == 'r') {
-    world = new World();
-  } 
+void showThanks() {
+  fill(50);
+  text ("Merci à Jimmy Béland-Bédard pour le PacMan", width - 275, height - 15);
 }
 
+void keyPressed() {
+  if (key == 'w' && !newWorldPress){ 
+    newWorldPress = true;
+    world = new World();
+  }
+  if (key == 'f' && !newFertilizerPress){ 
+    newFertilizerPress = true;
+    world.addFertilizer(new Fertilizer(random (width), random (height),world));
+  }
+  if (key == 'p' && !newPlantPress){
+    newPlantPress = true;
+    world.addPlant(new Plant(random (width), random (height),world,20));
+  }
+  if (key == 'h' && !newHerbivorePress){
+    newHerbivorePress = true;
+    world.addHerbivore(new Herbivore(random (width), random (height),world));
+  }
+  if (key == 'c' && !newCarnivorePress){
+    newCarnivorePress = true;
+    world.addCarnivore(new Carnivore(random (width), random (height), world));
+  }
+}
 
+void keyReleased() {
+  if (key == 'w') 
+    newWorldPress = false;
+  if (key == 'f') 
+    newFertilizerPress = false;
+  if (key == 'p') 
+    newPlantPress = false;
+  if (key == 'h') 
+    newHerbivorePress = false;
+  if (key == 'c') 
+    newCarnivorePress = false;
+}
+/**
+  this class contains 4 types of components : fertilizer,herbivore,carnivore,plant
+  those components interact with each other. The main idea is to represent world
+  simulation with energy.Nothing is lost, nothing is created apply to this energy
+  system.
+**/
 class World {
-  //config attributes
+  
+//config attributes
   final Boolean debug = false;
   final int startingHerbivore = 50;
   final int startingFertilizer = 10;
   final int startingPlant = 100;
+  final int startingCarnivore = 1;
   
-  //world components
+//world components
   ArrayList<Carnivore> carnivores;
   ArrayList<Fertilizer> fertilizers;
   ArrayList<Herbivore> herbivores;
@@ -51,7 +103,10 @@ class World {
   ArrayList<Fertilizer> newFertilizers;
   ArrayList<Herbivore> newHerbivores;
   ArrayList<Plant> newPlants;
+  
+//constructor
   World() {
+    
     carnivores = new ArrayList<Carnivore>();
     fertilizers = new ArrayList<Fertilizer>();
     herbivores = new ArrayList<Herbivore>();
@@ -64,8 +119,8 @@ class World {
     newFertilizers = new ArrayList<Fertilizer>();
     newHerbivores = new ArrayList<Herbivore>();
     newPlants = new ArrayList<Plant>();
-    //adding component
     
+  //adding component
     for (int i = 0; i < startingHerbivore; i++) 
       herbivores.add(new Herbivore(random (width), random (height),this));
       
@@ -74,19 +129,14 @@ class World {
       
     for (int i = 0; i < startingPlant; i++) 
       plants.add(new Plant(random (width), random (height),this,20));
-
-    carnivores.add(new Carnivore(random (width), random (height), this));
-
-    
-
+      
+    for (int i = 0; i < startingCarnivore; i++) 
+      carnivores.add(new Carnivore(random (width), random (height), this));
   }
   
   void update(long delta) {
-
-    manageInputs();
-    //update component
     
-      
+  //update component
     for(Herbivore h : herbivores)
       h.update(delta);
       
@@ -99,7 +149,7 @@ class World {
     for(Carnivore c : carnivores)
       c.update(delta);
    
-     //kill component
+   //kill component
      fertilizers.removeAll(deadFertilizers);
      carnivores.removeAll(deadCarnivores);
      plants.removeAll(deadPlants);
@@ -108,7 +158,8 @@ class World {
      deadCarnivores.clear();
      deadPlants.clear();
      deadHerbivores.clear();
-     //add new component
+     
+   //add new component
      fertilizers.addAll(newFertilizers);
      carnivores.addAll(newCarnivores);
      plants.addAll(newPlants);
@@ -120,11 +171,6 @@ class World {
   }
   
   void display () {
-    
-    //world display
-    background (255);
-    showThanks();
-    showData();
     
     //render component
     for(Fertilizer f : fertilizers)
@@ -141,12 +187,6 @@ class World {
     
   }
   
-  
-  void showThanks() {
-    fill(50);
-    text ("Merci à Jimmy Béland-Bédard pour le PacMan", width - 275, height - 15);
-  }
-  
   void showData() {
     fill(50);
     int fertilizerEnergy = getFertilizerEnergy();
@@ -154,6 +194,7 @@ class World {
     int herbivoreEnergy = getHerbivoreEnergy();
     int carnivoreEnergy = getCarnivoreEnergy();
     int worldEnergy = herbivoreEnergy + plantEnergy + fertilizerEnergy + carnivoreEnergy;
+    
     text ("Fertilizer count: " + fertilizers.size(), width - 275, 15);
     text ("total energy: " + fertilizerEnergy, width - 150, 15);
     
@@ -169,17 +210,9 @@ class World {
     text ("total world energy: " + worldEnergy, width - 150, 55);
     
   }
-  
-  
-  void manageInputs () {
-    if (mousePressed){
-      //this.addPlant(new Plant(mouseX,mouseY,fertilizers,this));
-      this.addFertilizer(new Fertilizer(mouseX,mouseY,this,500));
-    }
-    
-      
-  }
-  
+
+//Components management methods
+  //Fertilizer
   void addFertilizer(Fertilizer fertilizer){
     newFertilizers.add(fertilizer);
   }
@@ -194,6 +227,8 @@ class World {
       sum += f.energy;
     return sum;
   }
+  
+  //Plant
   void addPlant(Plant plant){
     newPlants.add(plant);
   }
@@ -209,6 +244,7 @@ class World {
     return sum;
   }
   
+  //Herbivore
   void addHerbivore(Herbivore herbivore){
     newHerbivores.add(herbivore);
   }
@@ -224,6 +260,7 @@ class World {
     return sum;
   }
   
+  //Carnivore
   void addCarnivore(Carnivore carnivore){
     newCarnivores.add(carnivore);
   }
