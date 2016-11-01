@@ -26,7 +26,8 @@ class Herbivore extends WorldObject {
   static final int defaultRayon = 3;
   static final float energySizeMultiplicator = 0.03;//used to calcul sizeModifier
   static final int defaultEnergy = 100; 
-  final static float topSpeed = 2;
+  final static float defaultSpeed = 2;
+  final static float geneticSpeedVariance = 0.10; // represent % of variance of speed inbetween agent
   final static int poopDelay = 120000;
   //Flock movement attributes
   final static float separationRadius = 25;
@@ -49,7 +50,7 @@ class Herbivore extends WorldObject {
   Boolean isMale;
   PVector velocity = new PVector();
   PVector acceleration = new PVector();
-
+  float speed;
   PVector separation;
   PVector alignment;
   PVector cohesion;
@@ -82,11 +83,17 @@ class Herbivore extends WorldObject {
     poopTimer.update(random(0,poopDelay));
     wanderingTimer.update(random(0,wanderingDelay));
     velocity.set(random(10),random(10));
-    velocity.limit(topSpeed);
+    velocity.limit(speed);
     updateSize();//set r in proportion with current energy
-    
+    speed = defaultSpeed;
+    speed += random(-geneticSpeedVariance,geneticSpeedVariance);
   }
-  
+  //apply 50% inherite genetic to geneticSpeedModifier
+  void setGeneticInheriteSpeedModifier(float modifier){
+    float currentGeneticVariance = speed - defaultSpeed;
+    currentGeneticVariance = currentGeneticVariance/2 + modifier;
+    speed = defaultSpeed + currentGeneticVariance;
+  }
   
 //INHERITE METHODS
   void update(long deltaTime){
@@ -107,7 +114,7 @@ class Herbivore extends WorldObject {
     }
     
     velocity.add (acceleration);
-    velocity.limit(topSpeed);
+    velocity.limit(speed);
     location.add (velocity);
     acceleration.set(0,0);
     
@@ -172,8 +179,10 @@ class Herbivore extends WorldObject {
     matingTimer.update(deltaTime);
     applyEscapeForce();
     applyFlockForces();
-    if(matingTimer.expired())
+    if(matingTimer.expired()){
       this.state = HerbivoreState.WANDERING;
+      hasPartner = false;
+    }
     else{
       if(!hasPartner){
         findPartner();
@@ -181,7 +190,7 @@ class Herbivore extends WorldObject {
          //go towards partner
          if(partner != null){
            mate = PVector.sub (sexLocation, location);
-           mate.limit(topSpeed);
+           mate.limit(speed);
            this.acceleration.add(mate);
            //if partner close enuff and you male put baby in it
            if(isMale && PVector.dist(location,partner.location) <= sexRadius){
@@ -190,7 +199,6 @@ class Herbivore extends WorldObject {
              
              //BABY CREATION
              if(sexTimer.expired()){
-               println("SexFinish");
                partner.energy += 50;
                this.energy -= 50;
                this.state = HerbivoreState.WANDERING;
@@ -215,10 +223,11 @@ class Herbivore extends WorldObject {
     applyEscapeForce();
     breedingTimer.update(deltaTime);
     if(breedingTimer.expired()){
-      world.addHerbivore(new Herbivore(location.x,location.y,world));
+      Herbivore newHerbivore = new Herbivore(location.x,location.y,world);
+      newHerbivore.setGeneticInheriteSpeedModifier((float)(speed - defaultSpeed)/2);
+      world.addHerbivore(newHerbivore);
       this.energy -= defaultEnergy;
       this.state = HerbivoreState.WANDERING;
-      println("baby created");
     }
   }
 
@@ -238,7 +247,6 @@ class Herbivore extends WorldObject {
          
            sexLocation = new PVector(location.x,location.y);
            partner.sexLocation = sexLocation;
-           println("PartnerFound");
          }
        }
      }
@@ -267,7 +275,7 @@ class Herbivore extends WorldObject {
       steer.div((float)count);
     
     if (steer.mag() > 0) {
-      steer.setMag(topSpeed);
+      steer.setMag(speed);
       steer.sub(velocity);
       steer.limit(topSteer);
     }
@@ -292,7 +300,7 @@ class Herbivore extends WorldObject {
     
     if (count > 0) {
       sum.div((float)count);
-      sum.setMag(topSpeed);
+      sum.setMag(speed);
       
       PVector steer = PVector.sub (sum, this.velocity);
       steer.limit (topSteer);
@@ -343,7 +351,7 @@ class Herbivore extends WorldObject {
     
     if (count > 0) {
       result.div(count);
-      result.limit(topSpeed);
+      result.limit(speed);
     }
     return result;
   }
@@ -364,7 +372,7 @@ class Herbivore extends WorldObject {
     
     if(closestPlant != null){
       result = PVector.sub(closestPlant.location, location);
-      result.limit(topSpeed);
+      result.limit(speed);
     }
     
     return result;
@@ -406,7 +414,7 @@ class Herbivore extends WorldObject {
     PVector desired = PVector.sub (target, this.location);
     
     // VITESSE MAXIMALE VERS LA CIBLE
-    desired.setMag(topSpeed);
+    desired.setMag(speed);
     
     // Braquage
     PVector steer = PVector.sub (desired, velocity);

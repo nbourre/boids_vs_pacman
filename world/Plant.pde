@@ -6,7 +6,7 @@ class Plant extends WorldObject{
   
 //config attributes
   //flowering state attributes
-  final static int floweringDelay = 5000;
+  final static int floweringDelay = 4000;
   final static int floweringStateEnergy = 200;
   final static int flowerSeedRadius = 75;
   final static color floweringColor = #ba390e;
@@ -21,9 +21,9 @@ class Plant extends WorldObject{
   static final int defaultWidth = 5;
   static final int defaultHeight = -30;
   static final float energySizeMultiplicator = 0.005;//used to calcul sizeModifier
-  static final float energyRootMultiplicator = 0.20;
+  static final float energyRootMultiplicator = 0.50;
   static final int defaultEnergy = 20; 
-  final static int eatDelay = 500;
+  final static int eatDelay = 200;
   
 //attributes
   ArrayList<Fertilizer> fertilizers;

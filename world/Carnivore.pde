@@ -1,136 +1,64 @@
-
-public enum CarnivoreState {WANDERING, HUNTING, SLEEPING}
-
+/**
+  this class represent carnivore. Carnivore eat herbivore the more hungry the carnivore is the faster he is
+**/
 class Carnivore extends WorldObject{
-
-  //config attributes
-  final static int baseEnergy = 200;
-  final static int sleepingDelay = 5000;
-  final static int huntingDelay = 10000;
-  final static int wanderingDelay = 10000;
+//config attributes
+  final static int baseEnergy = 2000;
   final static int animationDelay = 500;
-  
+  final static float upperLipClosed = PI / 180;
+  final static float lowerLipClosed = TWO_PI - (PI / 180);
+  final static float lowerLipOpen = 7 * QUARTER_PI;
+  final static float upperLipOpen = QUARTER_PI;
   final static float eatRadius = 5;
   final static float chaseRadius = 200;
   final static float huntingRadius = 100;
-  final static float wanderingSpeed = 2;
-  final static float huntingSpeed = 2.5;
-   //attributes
+  final static int poopDelay = 30000;
+  final static int poopAmount = 400;
+  final static float defaultSpeed = 3.5;
+  final static float energySpeedMultiplicator = -0.0005;
+  final static float defaultRayon = 30;
+  final static float energySizeMultiplicator = 0.02;
+//attributes
   ArrayList<Herbivore> herbivores;
-  
-  
-  float upperLipClosed = PI / 180;
-  float lowerLipClosed = TWO_PI - (PI / 180);
-  float lowerLipOpen = 7 * QUARTER_PI;
-  float upperLipOpen = QUARTER_PI;
-  color normalColor = color (255, 238, 0);
-  color huntingColor = color (255, 100, 0);
-  color c = normalColor;
-  float upperLip = upperLipClosed , lowerLip = lowerLipClosed;
   Boolean lipOpen = false;
-
-
-
-  
+  color c = color (255, 100, 0);
   float currentSpeed;
-  float topSteer = 0.3;
-
-  
-  Delay sleepingTimer = new Delay (sleepingDelay);
-  Delay huntingTimer = new Delay (huntingDelay);
-  Delay wanderingTimer = new Delay (wanderingDelay);
   Delay animationTimer = new Delay(animationDelay);
-
-  PVector velocity;
+  Delay poopTimer = new Delay(poopDelay);
+  PVector velocity = new PVector();
   PVector acceleration = new PVector();
-  PVector targetLocation;
-  
+  PVector targetLocation = new PVector();
   Boolean hasTarget = false;
   Herbivore target;
   int energy;
   float angle;
-  CarnivoreState state;
-//CONSTRUCTOR
+  float rayon;
+//constructor
   Carnivore(float x, float y, World world){
     //WorldObject attributes
     this.location = new PVector(x,y);
     this.world = world;
-    this.size = new PVector(30,30);
-    this.velocity = new PVector (3, 3);
-    angle = size.heading();
+    this.size = new PVector(defaultRayon,defaultRayon);
+    this.velocity = new PVector (defaultSpeed,defaultSpeed);
+    angle = velocity.heading();
     //herbivore attributes
-
     this.herbivores = world.herbivores;
-    this.state = CarnivoreState.WANDERING;
-    currentSpeed = wanderingSpeed;
     this.energy = baseEnergy;
+    speedUpdate();
+    sizeUpdate();
     targetLocation = new PVector(random (width - (2 * size.x)), random(height - (2* size.y)));
-    
   }
-//INHERITE METHODS
+  
+//inherited methods
   void update(long deltaTime){
     
-    switch(state){
-      case WANDERING:
-        currentSpeed = wanderingSpeed;
-        wanderingUpdate(deltaTime);
-        break;
-      case HUNTING:
-        currentSpeed = huntingSpeed;
-        huntingUpdate(deltaTime);
-        break;
-      case SLEEPING:
-        sleepingUpdate(deltaTime);
-        break;
-    }
-    
-    setColor();
-    moveToTarget();
-  }
-  
-  
-  void render(){
-    pushMatrix();
-    
-    stroke(0);
-    translate(location.x, location.y);
-    
-    if (this.state == CarnivoreState.SLEEPING) {
-      fill (50);
-      text ("Zzzz...", size.x / 2, -size.y / 2);
-      noFill();
-      ellipse (size.x - 10, -size.y / 2 - 3, size.x, size.y / 2);
-    } else {
-      rotate(angle);
-    }
-    
-    fill(c);
-    if(lipOpen)
-      arc(0, 0, size.x, size.y, upperLipOpen, lowerLipOpen, PIE);
-    else
-      arc(0, 0, size.x, size.y, upperLipClosed, lowerLipClosed, PIE);
-    popMatrix();
-    
-  }
-//STATE METHODS
-  void wanderingUpdate(long deltaTime){
-    wanderingTimer.update(deltaTime);
-    if(wanderingTimer.expired())
-      this.state = CarnivoreState.HUNTING;
-      
-    if(PVector.dist(this.location,targetLocation) < 10)
-      targetLocation = new PVector(random (width - (2 * size.x)), random(height - (2* size.y)));
-  }
-  
-  void huntingUpdate(long deltaTime){
-    
-      
     if(!hasTarget){
       findTarget();
       if(PVector.dist(this.location,targetLocation) < 10)
         targetLocation = new PVector(random (width - (2 * size.x)), random(height - (2* size.y)));
-    }else{
-      targetLocation = target.location;
+    }
+    else{
+       targetLocation = target.location;
       if(PVector.dist(location,target.location) < eatRadius){
         energy += target.energy;
         target.energy = 0;
@@ -140,34 +68,40 @@ class Carnivore extends WorldObject{
         hasTarget = false;
       }
     }
+    speedUpdate();
+    sizeUpdate();
+    moveToTarget();
     
+    
+    poopTimer.update(deltaTime);
+    if(poopTimer.expired())
+      poop();
+      
     animationTimer.update(deltaTime);
     if(animationTimer.expired())
       lipOpen = !lipOpen;
+       
+    if(energy < 0)
+      world.removeCarnivore(this);
+  }
+  
+  
+  void render(){
+    pushMatrix();
     
-    huntingTimer.update(deltaTime);
-    if(huntingTimer.expired()){
-      this.state = CarnivoreState.SLEEPING;
-      targetLocation.x = location.x;
-      targetLocation.y = location.y;
-      lipOpen = false;
-    }
-      
+    stroke(0);
+    translate(location.x, location.y);
+    rotate(angle);
+    fill(c);
+    if(lipOpen)
+      arc(0, 0, rayon, rayon, upperLipOpen, lowerLipOpen, PIE);
+    else
+      arc(0, 0, rayon, rayon, upperLipClosed, lowerLipClosed, PIE);
+    popMatrix();
+    
   }
-  
-  void sleepingUpdate(long deltaTime){
-    targetLocation.x = location.x;
-    targetLocation.y = location.y;
-    sleepingTimer.update(deltaTime);
-    if(sleepingTimer.expired()){
-      this.state = CarnivoreState.WANDERING;
-      world.addFertilizer(new Fertilizer(location.x,location.y,world,energy - baseEnergy));
-      this.energy = baseEnergy;
-    }
-  }
-  
-  
-//METHODS
+
+//methods
   //look for plant around and calcul forces on the closest one
   void findTarget () {
     Herbivore closestHerbivore = null;
@@ -184,19 +118,13 @@ class Carnivore extends WorldObject{
       hasTarget = true;
     }
   }
-  void setColor(){
-    
-    switch(state){
-      case WANDERING:
-        c = color (255, 238, 0);
-        break;
-      case HUNTING:
-        c = color (255, 100, 0);
-        break;
-      case SLEEPING:
-       c = color (200, 200, 200);
-        break;
-    }
+  
+  void speedUpdate(){
+    currentSpeed = (float)defaultSpeed + (float)energy * energySpeedMultiplicator;
+  }
+  
+  void sizeUpdate(){
+    rayon = energySizeMultiplicator * energy;
   }
   
   boolean moveToTarget() {
@@ -206,7 +134,6 @@ class Carnivore extends WorldObject{
     if (distanceToTarget >= 2) {
       
       angle = velocity.heading();      
-      
       velocity = desired;
       velocity.normalize();
       velocity.mult(currentSpeed);
@@ -216,5 +143,16 @@ class Carnivore extends WorldObject{
     } else {
       return true;
     }
+  }
+  
+  void poop(){
+    int poopSize;
+    if(poopAmount < energy)
+      poopSize = poopAmount;
+    else
+      poopSize = energy;
+      
+    world.addFertilizer(new Fertilizer(location.x,location.y,world,poopSize));
+    energy -= poopSize;
   }
 }

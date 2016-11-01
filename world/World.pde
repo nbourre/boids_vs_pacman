@@ -32,6 +32,9 @@ void draw() {
   
   showThanks();
   
+  //assure la loop no matter what
+  if(world.carnivores.size() == 0)
+    world = new World();
   previousTime = currentTime; 
 }
 
@@ -88,7 +91,7 @@ class World {
   final int startingHerbivore = 100;
   final int startingFertilizer = 30;
   final int startingPlant = 200;
-  final int startingCarnivore = 1;
+  final int startingCarnivore = 2;
   
 //world components
   ArrayList<Carnivore> carnivores;
@@ -104,6 +107,8 @@ class World {
   ArrayList<Herbivore> newHerbivores;
   ArrayList<Plant> newPlants;
   
+  float herbivoreAverageStartSpeed;
+  float herbivoreAverageCurrentSpeed;
 //constructor
   World() {
     
@@ -121,8 +126,12 @@ class World {
     newPlants = new ArrayList<Plant>();
     
   //adding component
-    for (int i = 0; i < startingHerbivore; i++) 
+    float speedSum = 0;
+    for (int i = 0; i < startingHerbivore; i++)
       herbivores.add(new Herbivore(random (width), random (height),this));
+    for(Herbivore h : herbivores)
+      speedSum += h.speed;
+    herbivoreAverageStartSpeed = speedSum / startingHerbivore;
       
     for (int i = 0; i < startingFertilizer; i++) 
       fertilizers.add(new Fertilizer(random (width), random (height),this));
@@ -168,6 +177,7 @@ class World {
      newCarnivores.clear();
      newPlants.clear();
      newHerbivores.clear();
+     
   }
   
   void display () {
@@ -194,6 +204,10 @@ class World {
     int carnivoreEnergy = getCarnivoreEnergy();
     int worldEnergy = herbivoreEnergy + plantEnergy + fertilizerEnergy + carnivoreEnergy;
     
+    float speedSum = 0;
+    for(Herbivore h : herbivores)
+      speedSum += h.speed;
+    herbivoreAverageCurrentSpeed = speedSum / herbivores.size();
     text ("Fertilizer count: " + fertilizers.size(), width - 275, 15);
     text ("total energy: " + fertilizerEnergy, width - 150, 15);
     
@@ -208,6 +222,7 @@ class World {
     
     text ("total world energy: " + worldEnergy, width - 150, 55);
     
+    text ("Herbivore startSpeed average " + herbivoreAverageStartSpeed, width - 275, 85);
   }
 
 //Components management methods
