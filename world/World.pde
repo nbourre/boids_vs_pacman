@@ -223,6 +223,7 @@ class World {
     text ("total world energy: " + worldEnergy, width - 150, 55);
     
     text ("Herbivore startSpeed average " + herbivoreAverageStartSpeed, width - 275, 85);
+    text ("herbivore Average Current Speed :  " + herbivoreAverageCurrentSpeed, width - 275, 95);
   }
 
 //Components management methods

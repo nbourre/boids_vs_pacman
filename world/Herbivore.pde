@@ -27,7 +27,7 @@ class Herbivore extends WorldObject {
   static final float energySizeMultiplicator = 0.03;//used to calcul sizeModifier
   static final int defaultEnergy = 100; 
   final static float defaultSpeed = 2;
-  final static float geneticSpeedVariance = 0.10; // represent % of variance of speed inbetween agent
+  final static float geneticSpeedVariance = 1.00; // represent % of variance of speed inbetween agent
   final static int poopDelay = 120000;
   //Flock movement attributes
   final static float separationRadius = 25;
