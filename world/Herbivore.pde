@@ -1,42 +1,46 @@
-public enum HerbivoreState {WANDERING, HUNGRY ,MATING, BREEDING}
+public enum HerbivoreState {WANDERING, EATING,MATING, BREEDING}
 
 class Herbivore extends WorldObject {
   
-  //config attributes
-  final static float mass = 1;
-  static final float MIN_RADIUS = 2;
-  static final float MAX_RADIUS = 4;
-  static final int MAX_ENERGY = 500;
+//config attributes
+  //wandering state attributes
+  final static int wanderingDelay = 40000;
+  //EATING state attributes
   final static float eatRadius = 5;
-  final static int eatTime = 100;
-  final static int wanderingTime = 40000;
-  final static int feedingTime = 5000;
-  final static int poopTime = 80000;
-  final static int breedingTime = 20000;
-  final static int matingTime = 20000;
-  final static int sexTime = 5000;
+  final static int eatDelay = 100;
+  final static int eatAmount = 3;
+  final static int feedingDelay = 5000;
+  final static float feedingRadius = 25;
+  //mating state attributes
+  final static int matingDelay = 20000;
+  final static int sexDelay = 2000;
+  final static int matingEnergyRequired = 150;
+  final static float sexRadius = 5;
+  final static float matingRadius = 200;
+  //escape attributes
+  final static float escapeRadius = 75;
+  final static float escapeWeight = 50;
+  //breeding state attributes
+  final static int breedingDelay = 5000;
+  //herbivore attributes
+  static final int defaultRayon = 3;
+  static final float energySizeMultiplicator = 0.03;//used to calcul sizeModifier
+  static final int defaultEnergy = 100; 
+  final static float topSpeed = 2;
+  final static int poopDelay = 120000;
+  //Flock movement attributes
   final static float separationRadius = 25;
   final static float alignmentRadius = 50;
   final static float cohesionRadius = 50;
-  final static float feedingRadius = 25;
-  final static float matingRadius = 200;
-  final static float sexRadius = 5;
-  final static float escapeRadius = 75;
-  
   final static float separationWeight = 1.5;
   final static float cohesionWeight = 1;
   final static float alignmentWeight = 1;
-  final static float feedingWeight = 0.25;
-  final static float matingWeight = 200;
-  final static float escapeWeight = 0.5;
-  
   final static float topSteer = .03;
-  final static float topSpeed = 2;
-  
-  final static int matingEnergyRequired = 200;
+
   //attributes
   int energy;
   HerbivoreState state;
+  HerbivoreState beforeEscapeState;
   ArrayList<Plant> plants;
   ArrayList<Herbivore> herbivores;
   ArrayList<Carnivore> carnivores;
@@ -54,35 +58,31 @@ class Herbivore extends WorldObject {
   PVector mate;
   PVector sexLocation;
   
-  Delay eatTimer;
-  Delay wanderingTimer;
-  Delay feedingTimer;
-  Delay poopTimer;
-  Delay matingTimer= new Delay(matingTime);
-  Delay breedingTimer = new Delay(breedingTime);
-  Delay sexTimer = new Delay(sexTime);
+  Delay eatTimer = new Delay(eatDelay);
+  Delay wanderingTimer = new Delay(wanderingDelay);
+  Delay feedingTimer = new Delay(feedingDelay);
+  Delay poopTimer = new Delay(poopDelay);
+  Delay matingTimer= new Delay(matingDelay);
+  Delay breedingTimer = new Delay(breedingDelay);
+  Delay sexTimer = new Delay(sexDelay);
   Boolean hasPartner = false;
   Herbivore partner = null;
 //CONSTRUCTOR
   Herbivore(float x,float y, World world){
-    //WorldObject attributes
+  //WorldObject attributes
     this.location = new PVector(x,y);
     this.world = world;
-    this.size = new PVector (16, 16);
-    angle = size.heading();
     //herbivore attributes
     this.carnivores = world.carnivores;
     this.herbivores = world.herbivores;
     this.plants = world.plants;
     this.state = HerbivoreState.WANDERING;
-    this.energy = 100;
+    this.energy = defaultEnergy;
     this.isMale = (int)random (9) % 2 == 1;
-    eatTimer = new Delay(eatTime);
-    poopTimer = new Delay(poopTime);
-    poopTimer.update(random(0,poopTime));
-    wanderingTimer = new Delay(wanderingTime);
-    wanderingTimer.update(random(0,wanderingTime));
-    feedingTimer = new Delay(feedingTime);
+    poopTimer.update(random(0,poopDelay));
+    wanderingTimer.update(random(0,wanderingDelay));
+    velocity.set(random(10),random(10));
+    velocity.limit(topSpeed);
     updateSize();//set r in proportion with current energy
     
   }
@@ -90,13 +90,12 @@ class Herbivore extends WorldObject {
   
 //INHERITE METHODS
   void update(long deltaTime){
-    
     switch(state){
       case WANDERING:
         wanderingUpdate(deltaTime);
         break;
-      case HUNGRY:
-        hungryUpdate(deltaTime);
+      case EATING:
+        eatingUpdate(deltaTime);
         break;
       case MATING:
         matingUpdate(deltaTime);
@@ -104,11 +103,13 @@ class Herbivore extends WorldObject {
       case BREEDING:
         breedingUpdate(deltaTime);
         break;
+
     }
+    
     velocity.add (acceleration);
     velocity.limit(topSpeed);
     location.add (velocity);
-    acceleration.mult (0);
+    acceleration.set(0,0);
     
     checkEdges();
     updateSize();
@@ -133,67 +134,54 @@ class Herbivore extends WorldObject {
     endShape();
     
     popMatrix();
-
   }
   
-  
-//STATE METHODS
+//state methods
+
   void wanderingUpdate(long deltaTime){
     
-    separation = calculSeparation();
-    cohesion = calculCohesion();
-    alignment = calculAlignment();
-    escape = calculEscape();
-    
-    
-    separation.mult (separationWeight);
-    alignment.mult (alignmentWeight);
-    cohesion.mult (cohesionWeight);
-    escape.mult(escapeWeight);
-    
-    
-    this.acceleration.add(separation);
-    this.acceleration.add(alignment);
-    this.acceleration.add(cohesion);
-    this.acceleration.add(escape);
-    
+    applyFlockForces();
+    applyEscapeForce();
     poopTimer.update(deltaTime);
     if(poopTimer.expired())
-      poop();
-    
-    
+    poop();
+   
     wanderingTimer.update(deltaTime);
     if(wanderingTimer.expired())
-      this.state = HerbivoreState.HUNGRY;
+      this.state = HerbivoreState.EATING;
     
     if(energy >= matingEnergyRequired)
       this.state = HerbivoreState.MATING;
-    
   }
-  void hungryUpdate(long deltaTime){
+  
+  void eatingUpdate(long deltaTime){
+    applyEscapeForce();
     food = calculFood();
-    food.mult(feedingWeight);
     this.acceleration.add(food);
     
     eatTimer.update(deltaTime);
     if(eatTimer.expired())
       eat();
+      
     feedingTimer.update(deltaTime);
     if(feedingTimer.expired())
       this.state = HerbivoreState.WANDERING;
-    
   }
+  
   void matingUpdate(long deltaTime){
     matingTimer.update(deltaTime);
-    
-    if(!matingTimer.expired()){
+    applyEscapeForce();
+    applyFlockForces();
+    if(matingTimer.expired())
+      this.state = HerbivoreState.WANDERING;
+    else{
       if(!hasPartner){
         findPartner();
       }else{
          //go towards partner
          if(partner != null){
            mate = PVector.sub (sexLocation, location);
-           mate.mult(matingWeight);
+           mate.limit(topSpeed);
            this.acceleration.add(mate);
            //if partner close enuff and you male put baby in it
            if(isMale && PVector.dist(location,partner.location) <= sexRadius){
@@ -202,6 +190,7 @@ class Herbivore extends WorldObject {
              
              //BABY CREATION
              if(sexTimer.expired()){
+               println("SexFinish");
                partner.energy += 50;
                this.energy -= 50;
                this.state = HerbivoreState.WANDERING;
@@ -215,22 +204,21 @@ class Herbivore extends WorldObject {
            }
          }else{
            findPartner();
-         }
-        
+         }  
       }
-    }else{
-      this.state = HerbivoreState.WANDERING;
     }
-    
-    
-    //
   }
+
   void breedingUpdate(long deltaTime){
+    
+    applyFlockForces();
+    applyEscapeForce();
     breedingTimer.update(deltaTime);
     if(breedingTimer.expired()){
       world.addHerbivore(new Herbivore(location.x,location.y,world));
-      this.energy -= 100;
+      this.energy -= defaultEnergy;
       this.state = HerbivoreState.WANDERING;
+      println("baby created");
     }
   }
 
@@ -247,10 +235,10 @@ class Herbivore extends WorldObject {
            h.partner = this;
            this.hasPartner = true;
            h.hasPartner = true;
+         
            sexLocation = new PVector(location.x,location.y);
-           sexLocation.add(PVector.sub(this.location,h.location));
            partner.sexLocation = sexLocation;
-           println("findPartner");
+           println("PartnerFound");
          }
        }
      }
@@ -339,7 +327,8 @@ class Herbivore extends WorldObject {
     }
   }
   //look for Carnivore and calcul PVector for escape
-  PVector calculEscape () {
+  PVector calculEscape() {
+    
     PVector result = new PVector(0,0);
     int count = 0;
     
@@ -347,21 +336,15 @@ class Herbivore extends WorldObject {
       float distanceToPredator = PVector.dist(location, c.location);
       
       if (distanceToPredator < escapeRadius) {
-        if (result == null) {
-          result = new PVector (0, 0);
-        }
         result.add(PVector.sub(location, c.location));
         count++;
       }
     }
     
-    if (result != null && count > 0) {
+    if (count > 0) {
       result.div(count);
-      //result.mult(-1);
       result.limit(topSpeed);
-
     }
-    
     return result;
   }
   //look for plant around and calcul forces on the closest one
@@ -379,16 +362,18 @@ class Herbivore extends WorldObject {
       }
     }
     
-    if(closestPlant != null)
-      return PVector.sub (closestPlant.location, location);
+    if(closestPlant != null){
+      result = PVector.sub(closestPlant.location, location);
+      result.limit(topSpeed);
+    }
     
     return result;
   }
   
-  void updateSize() {
-    r = map (energy, 0, MAX_ENERGY, MIN_RADIUS, MAX_RADIUS);
-  }
   
+  void updateSize(){
+    r = energySizeMultiplicator * energy;
+  }
   void checkEdges() { 
     if (location.x < -r) 
       location.x = width + r;
@@ -402,13 +387,13 @@ class Herbivore extends WorldObject {
   void setColor(){
     switch(state){
       case WANDERING :
-          c = isMale ? #0000AA : #AA00AA;
+          c = isMale ? #000044 : #440044;
           break;
-      case HUNGRY:
-          c = isMale ? #0000FF : #FF00FF;
+      case EATING:
+          c = isMale ? #000044 : #440044;
           break;
       case BREEDING:
-          c = isMale ? #0000FF : #FFFFFF;
+          c = #00FFFF;
           break;
       case MATING:
           c = isMale ? #0000bb : #bb00FF;
@@ -435,7 +420,7 @@ class Herbivore extends WorldObject {
       if(p.state != PlantState.SEED){
         float d = PVector.dist (this.location, p.location);
         if(d <= eatRadius)
-          this.energy += p.deplete(1);          
+          this.energy += p.deplete(eatAmount);          
       }
     }
   }
@@ -444,12 +429,34 @@ class Herbivore extends WorldObject {
     
     if(energy > 50){
       world.addFertilizer(new Fertilizer(location.x,location.y,world,30));
-      world.addPlant(new Plant(location.x,location.y,world));
-      this.energy -= 50;
+      this.energy -= 30;
+      if(random(5) < 2){
+        this.energy -= 20;
+        world.addPlant(new Plant(location.x,location.y,world));
+      }
+      
     }else{
       world.addFertilizer(new Fertilizer(location.x,location.y,world,this.energy));
       energy = 0;
     } 
   }
   
+  void applyFlockForces(){
+    separation = calculSeparation();
+    cohesion = calculCohesion();
+    alignment = calculAlignment();
+    
+    separation.mult (separationWeight);
+    alignment.mult (alignmentWeight);
+    cohesion.mult (cohesionWeight);
+    
+    this.acceleration.add(separation);
+    this.acceleration.add(alignment);
+    this.acceleration.add(cohesion);
+  }
+  void applyEscapeForce(){
+    escape = calculEscape();
+    escape.mult(escapeWeight);
+    acceleration.add(escape);
+  }
 }

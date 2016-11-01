@@ -11,10 +11,10 @@ class Carnivore extends WorldObject{
   final static int animationDelay = 500;
   
   final static float eatRadius = 5;
-  final static float chaseRadius = 100;
-  final static float huntingRadius = 50;
+  final static float chaseRadius = 200;
+  final static float huntingRadius = 100;
   final static float wanderingSpeed = 2;
-  final static float huntingSpeed = 3;
+  final static float huntingSpeed = 2.5;
    //attributes
   ArrayList<Herbivore> herbivores;
   
@@ -48,6 +48,7 @@ class Carnivore extends WorldObject{
   Boolean hasTarget = false;
   Herbivore target;
   int energy;
+  float angle;
   CarnivoreState state;
 //CONSTRUCTOR
   Carnivore(float x, float y, World world){

@@ -8,7 +8,7 @@ class Plant extends WorldObject{
   //flowering state attributes
   final static int floweringDelay = 5000;
   final static int floweringStateEnergy = 200;
-  final static int flowerSeedRadius = 40;
+  final static int flowerSeedRadius = 75;
   final static color floweringColor = #ba390e;
   //mature state attributes
   final static int matureStateEnergy = 100;
@@ -21,6 +21,7 @@ class Plant extends WorldObject{
   static final int defaultWidth = 5;
   static final int defaultHeight = -30;
   static final float energySizeMultiplicator = 0.005;//used to calcul sizeModifier
+  static final float energyRootMultiplicator = 0.20;
   static final int defaultEnergy = 20; 
   final static int eatDelay = 500;
   
@@ -28,10 +29,10 @@ class Plant extends WorldObject{
   ArrayList<Fertilizer> fertilizers;
   Fertilizer fertilizer;
   int energy;
-  float sizeModifier;
+  float rootRadius;
   PlantState state;
-  Delay floweringTimer;
-  Delay eatTimer;
+  Delay floweringTimer = new Delay(floweringDelay);
+  Delay eatTimer = new Delay(eatDelay);
   color strokeColor;
   
 //constructors 
@@ -43,11 +44,10 @@ class Plant extends WorldObject{
     
   //Plant attributes
     state = PlantState.SEED;
-    floweringTimer = new Delay(floweringDelay);
-    eatTimer = new Delay(eatDelay);
-    energy = defaultEnergy;
     fertilizers = world.fertilizers;
-    
+    energy = defaultEnergy;
+    sizeUpdate();
+    rootUpdate();
   }
  
 //inherited methods
@@ -69,6 +69,7 @@ class Plant extends WorldObject{
     }
     sizeUpdate();
     setColor();
+    rootUpdate();
     if(state != PlantState.SEED){
       if(energy <= 0  )
         world.removePlant(this);
@@ -125,7 +126,6 @@ class Plant extends WorldObject{
       findFertilizer();
   }
 
-  //FLOWERING
   void floweringUpdate(long deltaTime){
     
     floweringTimer.update(deltaTime);
@@ -141,7 +141,7 @@ class Plant extends WorldObject{
     }  
   }
   
-  //methods
+//methods
   int deplete(int amount){
 
     if(energy >= amount){
@@ -161,9 +161,13 @@ class Plant extends WorldObject{
     if(state == PlantState.SEED)
       size.set(1,1);
     else{
-      sizeModifier = (float) energySizeMultiplicator * energy;
+      float sizeModifier = (float) energySizeMultiplicator * energy;
       size.set(defaultWidth*sizeModifier,defaultHeight*sizeModifier);
     } 
+  }
+  
+  void rootUpdate(){
+    rootRadius = energyRootMultiplicator * energy;
   }
   
   void setColor(){
@@ -185,7 +189,7 @@ class Plant extends WorldObject{
   
   Boolean findFertilizer(){
     for(Fertilizer f:fertilizers){
-      if(PVector.dist(f.location,this.location) < f.fertilizingRayon){
+      if(PVector.dist(f.location,this.location) < (f.fertilizingRayon + rootRadius)){
         fertilizer = f;
         return true;
       }

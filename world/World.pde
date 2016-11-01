@@ -14,8 +14,8 @@ Boolean newCarnivorePress = false;
 
 void setup () {
   
- // fullScreen(1);
-  size (680, 384);
+  fullScreen(1);
+  //size (680, 384);
   world = new World();
  
 }
@@ -85,8 +85,8 @@ class World {
   
 //config attributes
   final Boolean debug = false;
-  final int startingHerbivore = 50;
-  final int startingFertilizer = 20;
+  final int startingHerbivore = 100;
+  final int startingFertilizer = 30;
   final int startingPlant = 200;
   final int startingCarnivore = 1;
   
@@ -179,12 +179,11 @@ class World {
     for(Plant p : plants)
       p.render();
       
-    for(Carnivore c : carnivores)
-      c.render();
-      
     for(Herbivore h : herbivores)
       h.render();
-    
+      
+    for(Carnivore c : carnivores)
+      c.render();
   }
   
   void showData() {
